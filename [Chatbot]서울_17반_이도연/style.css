@@ -1,0 +1,194 @@
+/* style.css (제공용) */
+body {
+    font-family: "Noto Sans KR", sans-serif;
+    background: #f0f2f5;
+    display: flex;
+    justify-content: center;
+    height: 100vh;
+    margin: 0;
+}
+.app-container {
+    width: 400px;
+    background: white;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    height: 90vh;
+    margin-top: 5vh;
+    border-radius: 15px;
+    overflow: hidden;
+}
+.header {
+    background-color: #1a2a6c; /* 조금 더 짙은 네이비 톤 */
+    color: white;
+    font-weight: bold;
+    padding: 15px;
+    /* ... 나머지 기존 코드 ... */
+}
+
+.upload-btn {
+    background-color: #fdbb2d; /* 버튼에 포인트를 주는 색상 */
+    color: #1a2a6c;
+    border: none;
+    padding: 5px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+.upload-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* 업로드 패널 */
+.upload-panel {
+    background: #e8f0fe;
+    border-bottom: 1px solid #ccc;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+}
+.upload-panel.hidden {
+    max-height: 0;
+    padding: 0;
+}
+.upload-panel:not(.hidden) {
+    max-height: 200px;
+    padding: 15px;
+}
+.upload-content {
+    text-align: center;
+}
+.upload-content p {
+    margin: 5px 0;
+    font-size: 13px;
+    color: #333;
+}
+.upload-content .file-types {
+    color: #666;
+    font-size: 11px;
+}
+.upload-content input[type="file"] {
+    margin: 10px 0;
+}
+.upload-content button {
+    padding: 8px 20px;
+    background: #3b5998;
+    color: white;
+    border: none;
+    border-radius: 15px;
+    cursor: pointer;
+    font-size: 13px;
+}
+.upload-content button:hover {
+    background: #2d4373;
+}
+#upload-status {
+    margin-top: 10px;
+    font-size: 12px;
+}
+#upload-status.success {
+    color: #28a745;
+}
+#upload-status.error {
+    color: #dc3545;
+}
+#upload-status.loading {
+    color: #666;
+}
+.chat-window {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.input-area {
+    padding: 15px;
+    background: #f0f0f0;
+    display: flex;
+    gap: 10px;
+}
+input {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 20px;
+    outline: none;
+}
+button {
+    padding: 10px 20px;
+    background: #3b5998;
+    color: white;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: bold;
+}
+button:hover {
+    background: #2d4373;
+}
+
+/* 채팅 말풍선 스타일 */
+.message {
+    max-width: 80%;
+    padding: 10px 15px;
+    border-radius: 15px;
+    font-size: 14px;
+    line-height: 1.4;
+}
+.user {
+    align-self: flex-end;
+    background: #3b5998;
+    color: white;
+    border-bottom-right-radius: 0;
+}
+.bot {
+    align-self: flex-start;
+    background: #e9e9eb;
+    color: black;
+    border-bottom-left-radius: 0;
+}
+
+.source-tag {
+    font-size: 11px;
+    color: #666;
+    margin-top: 8px;
+    padding-top: 5px;
+    border-top: 1px dashed #ccc;
+    font-style: italic;
+    text-align: right;
+}
+
+/* style.css에 추가 */
+
+/* .bot.message 클래스를 가진 메시지 박스 내부의 text-content 스타일 */
+.bot.message .text-content {
+    line-height: 1.6; /* 줄간격 조정으로 가독성 향상 */
+}
+
+/* 마크다운 제목(h1, h2, h3) */
+.bot.message .text-content h2,
+.bot.message .text-content h3 {
+    margin-top: 15px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 5px;
+}
+
+/* 마크다운 볼드(**강조**) */
+.bot.message .text-content strong {
+    color: #2c3e50; /* 강조 색상 변경 */
+    background-color: #f1f8ff; /* 연한 배경색 추가 */
+    padding: 2px 4px;
+    border-radius: 4px;
+}
+
+/* 마크다운 리스트(ul, li) */
+.bot.message .text-content ul {
+    margin-left: 20px;
+    margin-bottom: 10px;
+}
+
+.bot.message .text-content li {
+    margin-bottom: 5px;
+}

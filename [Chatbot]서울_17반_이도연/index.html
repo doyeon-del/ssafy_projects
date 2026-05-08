@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="ko">
+    <head>
+        <meta charset="UTF-8" />
+        <title>AI 면접관</title>
+        <link rel="stylesheet" href="style.css" />
+        <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    </head>
+
+    <body>
+        <div class="app-container">
+            <div class="header">
+                <span>AI 면접관</span>
+                <p></p>
+                <button class="upload-btn" onclick="toggleUpload()">문서 추가 버튼</button>
+            </div>
+
+            <!-- 업로드 패널 -->
+            <!-- ※ Step 2 핵심: JS 없이 HTML form으로 파일 업로드! -->
+
+            <div id="upload-panel" class="upload-panel">
+                <div class="upload-content">
+                    <p>이력서나 포트폴리오를 업로드하세요.</p>
+                    <p>AI 면접관이 당신의 경험을 분석하여 맞춤형 질문을 던집니다.</p>
+                    <p class="file-types">지원 형식: .txt, .md, .pdf</p>
+
+                    <form action="http://localhost:8000/upload" method="post" enctype="multipart/form-data">
+                        <input type="file" name="file" accept=".txt, .md, .pdf" required />
+                        <button type="submit">업로드</button>
+                    </form>
+                </div>
+            </div>
+
+            <div id="chat-window" class="chat-window">
+                <div class="message bot">
+                    안녕하세요!
+                    <b>모의 면접 시스템</b>
+                    에 오신 것을 환영합니다.
+                </div>
+            </div>
+
+            <div class="input-area">
+                <input type="text" id="user-input" placeholder="질문을 입력하세요..." />
+                <button id="send-btn">전송</button>
+            </div>
+        </div>
+
+      <script src="script_v4.js"></script>
+
+    </body>
+</html>
