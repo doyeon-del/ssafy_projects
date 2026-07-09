@@ -18,10 +18,14 @@ import json
 import re
 from sklearn.metrics.pairwise import cosine_similarity
 
-## 실습 과제 --- import cv2
+## 실습 과제 1 --- import cv2
 ### 이 cv2는 base 가상환경에 설치되어있는 것 확인함. 
 import cv2
 
+## 실습 과제 2 ----- Konply 대신에 Kiwi로 대체함. 
+from sklearn.feature_extraction.text import TfidfVectorizer
+from kiwipiepy import Kiwi
+from collections import Counter
 
 # 데이터베이스 모델
 class Document(SQLModel, table=True):
@@ -174,12 +178,12 @@ def extract_receipt_info(image, processor, model):
 def extract_text_with_layout(image, ocr, preprocess=False, **prep_opts):
     ocr_input = preprocess_image(image, **prep_opts) if preprocess else image
 
-    
-    result = PaddleOCR(lang='korean').ocr(np.array(ocr_input))
+    # load_models()에서 캐싱한 ocr 인스턴스를 재사용 (매 호출마다 새로 만들면 매우 느림)
+    result = ocr.ocr(np.array(ocr_input))
     text = ""
     boxes = []
     
-    if result[0]:
+    if result[0] and result[0]:
         for line in result[0]:
             text += line[1][0] + " "
             boxes.append(line[0])
@@ -510,20 +514,83 @@ def create_embedding(text, model):
     embedding = model.encode(text)
     return embedding.tolist()
 
-# 키워드 추출
-def extract_keywords(text, structured_data=None):
-    stopwords = ['은', '는', '이', '가', '을', '를', '의', '에', '와', '과', '에서', '으로']
-    words = text.split()
-    keywords = [w for w in words if len(w) > 1 and w not in stopwords]
-    
-    # 구조화된 데이터에서 추가 키워드
-    if structured_data:
-        if 'store' in structured_data:
-            keywords.append(structured_data['store'])
-        if 'date' in structured_data:
-            keywords.append(structured_data['date'])
-    
-    return ", ".join(list(set(keywords)))
+# 실습 과제 2 ----- 형태소 분석 기반 키워드 추출 (기존 불용어 제거 방식 대체)
+# Kiwi 형태소 분석기로 명사/고유명사만 추출 + 복합명사/신조어 처리 + TF-IDF 중요도 계산
+
+# 신조어/도메인 고유명사 사용자 사전 (복합명사·신조어 처리용) --- 필요할 때마다 계속 추가
+USER_DICTIONARY = [
+    ("무선이어폰", "NNP"),
+    ("사업자번호", "NNP"),
+]
+
+_kiwi = None
+def get_kiwi():
+    """Kiwi 인스턴스는 생성 비용이 커서 1회만 만들어 재사용 (OCR 재생성 이슈와 같은 이유)"""
+    global _kiwi
+    if _kiwi is None:
+        _kiwi = Kiwi()
+        for word, tag in USER_DICTIONARY:
+            _kiwi.add_user_word(word, tag)
+    return _kiwi
+
+NOUN_TAGS = {"NNG", "NNP"}  # 일반명사, 고유명사
+NOUN_STOPWORDS = {"것", "수", "등", "때", "년", "월", "일", "곳", "중", "후", "전"}
+
+def extract_nouns(text):
+    """명사/고유명사 추출 + 공백 없이 인접한 명사는 복합명사로 병합"""
+    kiwi = get_kiwi()
+    tokens = kiwi.tokenize(text)
+    nouns = []
+    buffer = []
+    prev_end = None
+    for tok in tokens:
+        is_noun = (tok.tag in NOUN_TAGS
+                   and len(tok.form) > 1
+                   and tok.form not in NOUN_STOPWORDS)
+        adjacent = (prev_end is not None and tok.start == prev_end)  # 공백 없이 붙어있는지
+        if is_noun:
+            nouns.append(tok.form)
+            if adjacent and buffer:
+                buffer.append(tok.form)
+            else:
+                if len(buffer) >= 2:
+                    nouns.append("".join(buffer))  # 복합명사
+                buffer = [tok.form]
+        else:
+            if len(buffer) >= 2:
+                nouns.append("".join(buffer))
+            buffer = []
+        prev_end = tok.start + tok.len
+    if len(buffer) >= 2:
+        nouns.append("".join(buffer))
+    return nouns
+
+# 형태소 분석 + TF-IDF 기반 키워드 추출 (기존 extract_keywords 대체)
+def extract_keywords_with_morpheme_analysis(text, top_k=15, doc_type=None):
+    nouns = extract_nouns(text)
+    if not nouns:
+        return ""
+
+    # 저장된 문서들로 코퍼스 구성 (같은 유형 우선)
+    with Session(engine) as session:
+        stmt = select(Document)
+        if doc_type:
+            stmt = stmt.where(Document.doc_type == doc_type)
+        corpus_texts = [d.content for d in session.exec(stmt).all() if d.content]
+
+    # 저장 문서가 없으면 TF-IDF가 무의미 → 단어 빈도(TF)로 fallback
+    if not corpus_texts:
+        return ", ".join(w for w, _ in Counter(nouns).most_common(top_k))
+
+    # TF-IDF: 코퍼스 = 저장문서 + 현재문서, 토큰화는 Kiwi 명사 추출기 사용
+    vectorizer = TfidfVectorizer(tokenizer=extract_nouns,
+                                 token_pattern=None, lowercase=False)
+    tfidf = vectorizer.fit_transform(corpus_texts + [text])
+    scores = tfidf[-1].toarray().flatten()          # 현재 문서 행
+    names = vectorizer.get_feature_names_out()
+    ranked = sorted(zip(names, scores), key=lambda x: x[1], reverse=True)
+    keywords = [w for w, s in ranked if s > 0][:top_k]
+    return ", ".join(keywords)
 
 # 문서 처리
 def process_document(uploaded_file, models, preprocess=False):
@@ -575,7 +642,8 @@ def process_document(uploaded_file, models, preprocess=False):
     print(f'\n[summary]\n{summary}')
     
     # 4. 키워드 추출
-    keywords = extract_keywords(content, structured_data)
+    # 실습 과제 2 ----- 형태소 분석 기반 키워드 추출로 교체
+    keywords = extract_keywords_with_morpheme_analysis(content, top_k=15, doc_type=doc_type)
     print('\n==========')
     print(f'\n[keywords]\n{keywords}')
     
